@@ -12,5 +12,6 @@
     "settings": {
         "terminal.integrated.shell.linux": "/bin/zsh"
     },
-    "postCreateCommand": "yarn"
+    "postCreateCommand": "yarn",
+    "runArgs": ["-p", "10.123.123.31:3000:3000"]
 }
