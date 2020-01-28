@@ -14,31 +14,30 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faCheckSquare, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 import { faChevronCircleRight } from '@fortawesome/free-solid-svg-icons';
 
-let now = new Date();
-
 class App extends React.Component {
-  
-  state = {
-    selectedDate: now,
-    selectedDateString: this.getYearMonthDayString(now),
-    fieldDefinitions: {
-      "Tracked Number 1": {
-        type: "number"
+  constructor(props) { 
+    super(props);
+    let now = new Date();
+    let selectedDateString = this.getYearMonthDayString(now); 
+    this.state = {
+      selectedDate: now,
+      editMode: false,
+      selectedDateString: selectedDateString,
+      fieldDefinitions: {
+        "Tracked Number 1": {
+          type: "number"
+        },
+        "Tracked Number 2": {
+          type: "number"
+        }
       },
-      "Tracked Number 2": {
-        type: "number"
-      }
-    },
-    data: {
-      "2020-1-25": {
-        "Tracked Number 1": 5,
-        "Tracked Number 2": 3
-      }
-    }
-  };
+      data: {},
+      tempFieldDefinitions: {}
+    };
+  }
 
   getYearMonthDayString(date) {
     let year = date.getFullYear();
@@ -52,9 +51,10 @@ class App extends React.Component {
   }
  
   handleDateChange = date => {
-    console.log(date);
-    console.log(typeof(date));
-    let selectedDateString = this.getYearMonthDayString(date);
+    let selectedDateString = this.getYearMonthDayString(date); 
+    if (!this.state.data.hasOwnProperty(selectedDateString)){
+      this.initializeDataForDate(selectedDateString, "", "")
+    }
     this.setState({
       selectedDate: date,
       selectedDateString: selectedDateString
@@ -86,7 +86,12 @@ class App extends React.Component {
     }
     else {
       let currentData = this.state.data;
-      currentData[this.state.selectedDateString][field] = currentData[this.state.selectedDateString][field] + 1;
+      if (!currentData[this.state.selectedDateString].hasOwnProperty(field)){
+        currentData[this.state.selectedDateString][field] = 1;  
+      }
+      else {
+        currentData[this.state.selectedDateString][field] = currentData[this.state.selectedDateString][field] + 1;
+      }
       this.setState({
         data: currentData
       });
@@ -103,8 +108,13 @@ class App extends React.Component {
     //we have the date
     else {
       let currentData = this.state.data;
-      if (currentData[this.state.selectedDateString][field] > 0) {
-        currentData[this.state.selectedDateString][field] = currentData[this.state.selectedDateString][field] - 1;
+      if (!currentData[this.state.selectedDateString].hasOwnProperty(field)){
+        currentData[this.state.selectedDateString][field] = 0;  
+      }
+      else {
+        if (currentData[this.state.selectedDateString][field] > 0) {
+          currentData[this.state.selectedDateString][field] = currentData[this.state.selectedDateString][field] - 1;
+        }
       }
       this.setState({
         data: currentData
@@ -126,14 +136,35 @@ class App extends React.Component {
     this.handleDateChange(newDate);
   }
 
+  createListGroupArray = () => {
+    let listGroupArray = [];
+    console.log(Object.keys(this.state.fieldDefinitions));
+    for (var field of Object.keys(this.state.fieldDefinitions)) {
+      let tempItem = this.createListGroupItem(field);
+      listGroupArray.push(tempItem);
+    }
+    console.log(listGroupArray);
+    return listGroupArray;
+  }
+
+  getDefaultForField = field => {
+    if (this.state.fieldDefinitions[field].type === "number") {
+      return 0;
+    }
+  }
 
   createListGroupItem = field => {
     if (!this.state.fieldDefinitions.hasOwnProperty(field)) {
+      console.log("no field definition for: "+field);
       return;
     }
     let fieldType = this.state.fieldDefinitions[field].type;
-    var inputGroup = <></>;
-    if(fieldType === "number") {
+    let inputGroup = <></>;
+    if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
+      let inputGroup = <></>;
+    }
+    else if(fieldType === "number") {
+      console.log("Field type is number");
       inputGroup = 
       <InputGroup>
         <InputGroup.Prepend>
@@ -142,8 +173,9 @@ class App extends React.Component {
           </Button>
         </InputGroup.Prepend>
         <Form.Control type="number" placeholder="0" value={
-          this.state.data.hasOwnProperty(this.state.selectedDateString) ? 
-          this.state.data[this.state.selectedDateString][field] : 0
+          this.state.data[this.state.selectedDateString].hasOwnProperty(field) ? 
+          this.state.data[this.state.selectedDateString][field] :
+          this.getDefaultForField(field)
         }/>
         <InputGroup.Append>
           <Button variant={"dark"} value={field} onClick={this.stepUp}>
@@ -167,6 +199,71 @@ class App extends React.Component {
         </Form.Group>
       </ListGroup.Item>
     )
+  }
+
+  toggleEditMode = event => {
+    this.setState({
+      editMode: !this.state.editMode
+    });
+  }
+
+  handleTempItemRemove = event => {
+    let key = event.currentTarget.value;
+    let tempCopy = Object.assign({}, this.state.tempFieldDefinitions);
+    delete tempCopy[key];
+    this.setState({tempFieldDefinitions: tempCopy});
+  }
+
+  renderTempListItem = key => {
+    return(
+      <ListGroup.Item key={key}>
+        <Button variant="secondary" value={key} onClick={this.handleTempItemRemove}>
+          <FontAwesomeIcon icon={faTrash}></FontAwesomeIcon>
+        </Button>
+        <Form.Control required type="text" placeholder={"Name of your new tracked aspect"}
+          value={this.state.tempFieldDefinitions[key].name}
+          onChange={(event) => {
+            let tempCopy = Object.assign({},this.state.tempFieldDefinitions);
+            tempCopy[key]["name"] = event.target.value;
+            this.setState({tempFieldDefinitions: tempCopy})
+          }}>
+        </Form.Control>
+        <Form.Control required as="select" value={this.state.tempFieldDefinitions[key].type}
+          onChange={(event) => {
+            let tempCopy = Object.assign({},this.state.tempFieldDefinitions);
+            tempCopy[key].type = event.target.value;
+            this.setState({tempFieldDefinitions: tempCopy})
+          }}>
+          <option disabled value="">Select Type</option>
+          <option value="number">Number</option>
+        </Form.Control>
+      </ListGroup.Item>
+    )
+  }
+
+  createTempListItem = event => {
+    let tempCopy = Object.assign({}, this.state.tempFieldDefinitions);
+    let newId = new Date().getTime(); 
+    tempCopy[newId] = {
+      name: "",
+      type: ""
+    }
+    this.setState({tempFieldDefinitions: tempCopy});
+  }
+
+  saveTempFields = () => {
+    let fieldDefCopy = Object.assign({}, this.state.fieldDefinitions);
+    for (var key of Object.keys(this.state.tempFieldDefinitions)) {
+      fieldDefCopy[this.state.tempFieldDefinitions[key]["name"]] = {
+        type: this.state.tempFieldDefinitions[key]["type"]
+      };
+    }
+    this.setState({fieldDefinitions: fieldDefCopy, tempFieldDefinitions: {}});
+    this.toggleEditMode();
+  }
+
+  componentDidMount() {
+    this.initializeDataForDate(this.state.selectedDateString);
   }
 
   render() {
@@ -207,14 +304,33 @@ class App extends React.Component {
             <Card>
               <Card.Header>
                 <span className={"float-left"}>Your Life</span>
-                <Button variant="dark" className={"float-right"}>
-                  <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
-                </Button>
+                {this.state.editMode ? 
+                  <>
+                  <Button form="tempFieldsForm" type="submit" variant="primary" className={"float-right"}>
+                    <FontAwesomeIcon icon={faSave}></FontAwesomeIcon>
+                  </Button>
+                  <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
+                    Cancel
+                  </Button>
+                  </>
+                  : 
+                  <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
+                    <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
+                  </Button>
+                }
               </Card.Header>
               <ListGroup variant="flush">
-                { this.state.data[this.state.selectedDateString] ?
-                Object.keys(this.state.data[this.state.selectedDateString]).map(this.createListGroupItem) : 
-                Object.keys(this.state.fieldDefinitions).map(this.createListGroupItem) }  
+                {this.createListGroupArray(this.state.selectedDateString)}
+                {this.state.editMode ?
+                <>
+                <Form id="tempFieldsForm" onSubmit={this.saveTempFields}>
+                  {Object.keys(this.state.tempFieldDefinitions).map(this.renderTempListItem)}
+                </Form>
+                <ListGroup.Item>
+                  <Button variant="primary" onClick={this.createTempListItem}>
+                    <FontAwesomeIcon icon={faPlus}></FontAwesomeIcon>
+                  </Button>
+                </ListGroup.Item></> : ""}
               </ListGroup>
             </Card>
           </Col>
