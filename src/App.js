@@ -23,6 +23,7 @@ class App extends React.Component {
     let now = new Date();
     let selectedDateString = this.getYearMonthDayString(now); 
     this.state = {
+      isLoaded: false,
       selectedDate: now,
       editMode: false,
       selectedDateString: selectedDateString,
@@ -32,11 +33,27 @@ class App extends React.Component {
         },
         "Tracked Number 2": {
           type: "number"
+        },
+        "Tracked Dropdown 1": {
+          type: "dropdown",
+          options: ["option1", "option2", "option3"]
         }
       },
       data: {},
       tempFieldDefinitions: {}
     };
+  }
+
+  getData = () => {
+    this.setState({
+      isLoaded: true,
+      data: {
+        "2020-1-27": {
+          "Tracked Number 1": 5,
+          "Tracked Number 2": 3
+        }
+      }
+    });
   }
 
   getYearMonthDayString(date) {
@@ -52,16 +69,29 @@ class App extends React.Component {
  
   handleDateChange = date => {
     let selectedDateString = this.getYearMonthDayString(date); 
-    if (!this.state.data.hasOwnProperty(selectedDateString)){
-      this.initializeDataForDate(selectedDateString, "", "")
-    }
     this.setState({
       selectedDate: date,
       selectedDateString: selectedDateString
     });
+    if (!this.state.data.hasOwnProperty(selectedDateString)) {
+      this.initializeDate(selectedDateString);
+    }
   };
 
-  initializeDataForDate = (dateString, field, value) => {
+  initializeDate = (dateString) => {
+    let tempObject = {};
+    for (var key of Object.keys(this.state.fieldDefinitions)) {
+      tempObject[key] = this.getDefaultForField(key);
+    }
+    let newData = Object.assign({}, this.state.data);
+    newData[dateString] = tempObject;
+    console.log("new data", newData);
+    this.setState({
+      data: newData
+    });
+  };
+
+  initializeFieldForDate = (dateString, field, value) => {
     let tempObject = {};
     for (var key of Object.keys(this.state.fieldDefinitions)) {
       if (key === field) {
@@ -82,7 +112,7 @@ class App extends React.Component {
     let field = event.currentTarget.value;
     //if our data doesn't have an entry for this date, create it
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
-      this.initializeDataForDate(this.state.selectedDateString, field, 1);
+      this.initializeFieldForDate(this.state.selectedDateString, field, 1);
     }
     else {
       let currentData = this.state.data;
@@ -103,7 +133,7 @@ class App extends React.Component {
     let field = event.currentTarget.value;
     //if our data doesn't have an entry for this date, create it
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
-      this.initializeDataForDate(this.state.selectedDateString, field, 0);
+      this.initializeFieldForDate(this.state.selectedDateString, field, 0);
     }
     //we have the date
     else {
@@ -151,6 +181,9 @@ class App extends React.Component {
     if (this.state.fieldDefinitions[field].type === "number") {
       return 0;
     }
+    else if (this.state.fieldDefinitions[field].type === "dropdown") {
+      return "";
+    }
   }
 
   createListGroupItem = field => {
@@ -161,7 +194,7 @@ class App extends React.Component {
     let fieldType = this.state.fieldDefinitions[field].type;
     let inputGroup = <></>;
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
-      let inputGroup = <></>;
+      inputGroup = <></>;
     }
     else if(fieldType === "number") {
       console.log("Field type is number");
@@ -184,14 +217,38 @@ class App extends React.Component {
         </InputGroup.Append>
       </InputGroup>;
     }
+
+    else if(fieldType === "dropdown") {
+      inputGroup = 
+      <InputGroup>
+        <Form.Control required as="select" placeholder="0" value={
+          this.state.data[this.state.selectedDateString].hasOwnProperty(field) ? 
+          this.state.data[this.state.selectedDateString][field] :
+          this.getDefaultForField(field)
+          } 
+            onChange={(event)=>{
+              let tempObject = this.state.data;
+              tempObject[this.state.selectedDateString][field] = event.target.value;
+              this.setState({data: tempObject});
+            }
+          }>
+          <option value="">Select...</option>
+          {this.state.fieldDefinitions[field].options.map((value)=>{return <option value={value}>{value}</option>})}
+        </Form.Control>
+      </InputGroup>;
+    }
     
     return(
       <ListGroup.Item key={field}>
         <Form.Group as={Row}>
           <Col xs={5}>
-          <Form.Label>
-            {field}
-          </Form.Label>
+            {this.state.editMode ? 
+            <Button variant="secondary" value={field} onClick={this.handleItemRemove}>
+              <FontAwesomeIcon icon={faTrash}></FontAwesomeIcon>
+            </Button> : ""}
+            <Form.Label>
+              {field}
+            </Form.Label>
           </Col>
           <Col xs={7}>
             {inputGroup}
@@ -207,6 +264,15 @@ class App extends React.Component {
     });
   }
 
+  handleItemRemove = event => {
+    //TODO Change this so that the cancel button doesn't remove it.
+    //Maybe use a "toDelete" list in the state and flush it on save/clear it on cancel
+    let key = event.currentTarget.value;
+    let tempCopy = Object.assign({}, this.state.fieldDefinitions);
+    delete tempCopy[key];
+    this.setState({fieldDefinitions: tempCopy});
+  }
+
   handleTempItemRemove = event => {
     let key = event.currentTarget.value;
     let tempCopy = Object.assign({}, this.state.tempFieldDefinitions);
@@ -215,6 +281,21 @@ class App extends React.Component {
   }
 
   renderTempListItem = key => {
+    console.log(key);
+    let additionalControls = <></>;
+    if (this.state.tempFieldDefinitions[key].type === "number"){
+      additionalControls = <></>;
+    }
+    else if (this.state.tempFieldDefinitions[key].type === "dropdown"){
+      additionalControls = <Form.Control required type="text" placeholder={"Comma-separated list of dropdown values"}
+      value={this.state.tempFieldDefinitions[key].options.join(",")}
+      onChange={(event) => {
+        let tempCopy = Object.assign({},this.state.tempFieldDefinitions);
+        tempCopy[key].options = event.target.value.split(",");
+        this.setState({tempFieldDefinitions: tempCopy})
+      }}>
+    </Form.Control>
+    }
     return(
       <ListGroup.Item key={key}>
         <Button variant="secondary" value={key} onClick={this.handleTempItemRemove}>
@@ -236,7 +317,9 @@ class App extends React.Component {
           }}>
           <option disabled value="">Select Type</option>
           <option value="number">Number</option>
+          <option value="dropdown">Dropdown</option>
         </Form.Control>
+        {additionalControls}
       </ListGroup.Item>
     )
   }
@@ -246,7 +329,8 @@ class App extends React.Component {
     let newId = new Date().getTime(); 
     tempCopy[newId] = {
       name: "",
-      type: ""
+      type: "",
+      options: []
     }
     this.setState({tempFieldDefinitions: tempCopy});
   }
@@ -255,7 +339,8 @@ class App extends React.Component {
     let fieldDefCopy = Object.assign({}, this.state.fieldDefinitions);
     for (var key of Object.keys(this.state.tempFieldDefinitions)) {
       fieldDefCopy[this.state.tempFieldDefinitions[key]["name"]] = {
-        type: this.state.tempFieldDefinitions[key]["type"]
+        type: this.state.tempFieldDefinitions[key].type,
+        options: this.state.tempFieldDefinitions[key].options
       };
     }
     this.setState({fieldDefinitions: fieldDefCopy, tempFieldDefinitions: {}});
@@ -263,7 +348,13 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    this.initializeDataForDate(this.state.selectedDateString);
+    console.log("component did mount");
+    if (!this.state.isLoaded) {
+      this.getData();
+    }
+    if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
+      this.initializeDate(this.state.selectedDateString);
+    }
   }
 
   render() {
@@ -331,6 +422,8 @@ class App extends React.Component {
                     <FontAwesomeIcon icon={faPlus}></FontAwesomeIcon>
                   </Button>
                 </ListGroup.Item></> : ""}
+                {/*DropDown Test*/}
+                
               </ListGroup>
             </Card>
           </Col>
