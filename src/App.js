@@ -14,8 +14,9 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faCheckSquare, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
+import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 import { faChevronCircleRight } from '@fortawesome/free-solid-svg-icons';
+import Select from 'react-select';
 
 class App extends React.Component {
   constructor(props) { 
@@ -37,6 +38,10 @@ class App extends React.Component {
         "Tracked Dropdown 1": {
           type: "dropdown",
           options: ["option1", "option2", "option3"]
+        },
+        "Tracked Multiselect 1": {
+          type: "multiselect",
+          options: [{value:"one", label:"one"}, {value:"two", label:"two"}, {value:"three", label:"three"}]
         }
       },
       data: {},
@@ -184,6 +189,9 @@ class App extends React.Component {
     else if (this.state.fieldDefinitions[field].type === "dropdown") {
       return "";
     }
+    else if (this.state.fieldDefinitions[field].type === "multiselect") {
+      return [];
+    }
   }
 
   createListGroupItem = field => {
@@ -237,6 +245,19 @@ class App extends React.Component {
         </Form.Control>
       </InputGroup>;
     }
+
+    else if(fieldType === "multiselect") {
+      inputGroup =
+      <Select isMulti={true} options={this.state.fieldDefinitions[field].options} placeholder="Start typing or select some values"
+        value = {this.state.data[this.state.selectedDateString][field]}
+        onChange={(selectedValue) => {
+          let tempObject = this.state.data;
+          tempObject[this.state.selectedDateString][field] = selectedValue;
+          this.setState({data: tempObject});
+        }}
+      >
+      </Select>;
+    }
     
     return(
       <ListGroup.Item key={field}>
@@ -288,6 +309,16 @@ class App extends React.Component {
     }
     else if (this.state.tempFieldDefinitions[key].type === "dropdown"){
       additionalControls = <Form.Control required type="text" placeholder={"Comma-separated list of dropdown values"}
+      value={this.state.tempFieldDefinitions[key].options.join(",")}
+      onChange={(event) => {
+        let tempCopy = Object.assign({},this.state.tempFieldDefinitions);
+        tempCopy[key].options = event.target.value.split(",");
+        this.setState({tempFieldDefinitions: tempCopy})
+      }}>
+    </Form.Control>
+    }
+    else if (this.state.tempFieldDefinitions[key].type === "multiselect"){
+      additionalControls = <Form.Control required type="text" placeholder={"Comma-separated list of select values"}
       value={this.state.tempFieldDefinitions[key].options.join(",")}
       onChange={(event) => {
         let tempCopy = Object.assign({},this.state.tempFieldDefinitions);
@@ -422,8 +453,6 @@ class App extends React.Component {
                     <FontAwesomeIcon icon={faPlus}></FontAwesomeIcon>
                   </Button>
                 </ListGroup.Item></> : ""}
-                {/*DropDown Test*/}
-                
               </ListGroup>
             </Card>
           </Col>
