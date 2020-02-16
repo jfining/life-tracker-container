@@ -85,6 +85,6 @@ function createCognitoUser(email) {
     });
 }
 
-function toUsername(email) {
+export function toUsername(email) {
     return email.replace('@', '-at-');
 }

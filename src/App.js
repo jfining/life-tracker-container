@@ -1,10 +1,8 @@
 import React from 'react';
 import './App.css';
 import Navbar from 'react-bootstrap/Navbar';
-import NavDropdown from 'react-bootstrap/NavDropdown';
 import Nav from 'react-bootstrap/Nav';
 import Form from 'react-bootstrap/Form';
-import FormControl from 'react-bootstrap/FormControl';
 import Button from 'react-bootstrap/Button';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -17,8 +15,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 import { faChevronCircleRight } from '@fortawesome/free-solid-svg-icons';
 import Select from 'react-select';
-import {BrowserRouter, Route, Redirect, useHistory, useLocation} from 'react-router-dom';
-import fakeAuth from './routes/FakeAuth';
+import {BrowserRouter, Route, Redirect} from 'react-router-dom';
+import Registration from './routes/Registration';
+import SignIn from './routes/SignIn';
 
 class App extends React.Component {
   constructor(props) { 
@@ -31,36 +30,68 @@ class App extends React.Component {
       editMode: false,
       selectedDateString: selectedDateString,
       fieldDefinitions: {
-        "Tracked Number 1": {
+        "Glasses of Water": {
           type: "number"
         },
-        "Tracked Number 2": {
+        "Cups of Coffee": {
           type: "number"
         },
-        "Tracked Dropdown 1": {
+        "Single Select Dropdown": {
           type: "dropdown",
           options: ["option1", "option2", "option3"]
         },
-        "Tracked Multiselect 1": {
+        "Multiselect Dropdown": {
           type: "multiselect",
           options: [{value:"one", label:"one"}, {value:"two", label:"two"}, {value:"three", label:"three"}]
         }
       },
       data: {},
-      tempFieldDefinitions: {}
+      tempFieldDefinitions: {},
+      userEmail: "jfining@gmail.com",
+      userName: "",
+      authenticated: true
     };
   }
 
   getData = () => {
-    this.setState({
-      isLoaded: true,
-      data: {
-        "2020-1-27": {
-          "Tracked Number 1": 5,
-          "Tracked Number 2": 3
-        }
+    var url = process.env.REACT_APP_HOST + "/user?email=" + this.state.userEmail;
+    console.log(url);
+    fetch(url, {
+      method: "GET",
+      headers: {
       }
-    });
+    })
+    .then(res => res.json())
+    .then(results => {
+      var userInfo = results.userData[this.state.userEmail];
+      this.setState({
+        isLoaded: true,
+        data: userInfo.data,
+        fieldDefinitions: userInfo.fieldDefinitions
+      })}
+    )
+    .catch(err => console.log(err))
+  }
+
+  sendDataUpdate = () => {
+    var url = process.env.REACT_APP_HOST + "/";
+    let payload = {
+      userEmail: this.state.userEmail,
+      data: JSON.stringify(this.state.data),
+      fieldDefinitions: JSON.stringify(this.state.fieldDefinitions)
+    }
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(results => {
+    }
+    )
+    .catch(err => console.log(err))
   }
 
   getYearMonthDayString(date) {
@@ -68,10 +99,6 @@ class App extends React.Component {
     let month = date.getMonth() + 1;
     let day = date.getDate();
     return year + "-" + month + "-" + day;
-  }
-
-  sendDataUpdate = (data) => {
-    return null;
   }
  
   handleDateChange = date => {
@@ -132,7 +159,7 @@ class App extends React.Component {
       this.setState({
         data: currentData
       });
-      this.sendDataUpdate(currentData);
+      this.sendDataUpdate();
     }
   }
 
@@ -157,7 +184,7 @@ class App extends React.Component {
         data: currentData
       });
       //probably should move this to componentWillUpdate or something
-      this.sendDataUpdate(currentData);
+      this.sendDataUpdate();
     }
   }
 
@@ -239,7 +266,7 @@ class App extends React.Component {
             onChange={(event)=>{
               let tempObject = this.state.data;
               tempObject[this.state.selectedDateString][field] = event.target.value;
-              this.setState({data: tempObject});
+              this.setState({data: tempObject}, this.sendDataUpdate);
             }
           }>
           <option value="">Select...</option>
@@ -255,7 +282,7 @@ class App extends React.Component {
         onChange={(selectedValue) => {
           let tempObject = this.state.data;
           tempObject[this.state.selectedDateString][field] = selectedValue;
-          this.setState({data: tempObject});
+          this.setState({data: tempObject}, this.sendDataUpdate);
         }}
       >
       </Select>;
@@ -285,6 +312,7 @@ class App extends React.Component {
     this.setState({
       editMode: !this.state.editMode
     });
+    console.log(JSON.stringify(this.state));
   }
 
   handleItemRemove = event => {
@@ -391,11 +419,12 @@ class App extends React.Component {
     }
     this.setState({fieldDefinitions: fieldDefCopy, tempFieldDefinitions: {}});
     this.toggleEditMode();
+    this.sendDataUpdate();
   }
 
   componentDidMount() {
     console.log("component did mount");
-    if (!this.state.isLoaded) {
+    if (!this.state.isLoaded && this.state.authenticated) {
       this.getData();
     }
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
@@ -403,18 +432,18 @@ class App extends React.Component {
     }
   }
 
-  PrivateRoute({ children, ...rest }) {
-    console.log("fakeAuth:", fakeAuth.isAuthenticated);
+  PrivateRoute = ({ children, ...rest }) => {
+    
     return (
       <Route
         {...rest}
         render={({ location }) =>
-          fakeAuth.isAuthenticated ? (
+          this.state.authenticated ? (
             children
           ) : (
             <Redirect
               to={{
-                pathname: "/login",
+                pathname: "/signin",
                 state: { from: location }
               }}
             />
@@ -423,32 +452,25 @@ class App extends React.Component {
       />
     );
   }
-
-  LoginPage() {
-    let history = useHistory();
-    let location = useLocation();
-  
-    let { from } = location.state || { from: { pathname: "/" } };
-    let login = () => {
-      fakeAuth.authenticate(() => {
-        history.replace(from);
-      });
-    };
-  
-    return (
-      <div>
-        <p>You must log in to view the page at {from.pathname}</p>
-        <button onClick={login}>Log in</button>
-      </div>
-    );
+  //Change this to just use a cognito user object of some sort
+  handleAuthenticated = (accessToken, idToken, userEmail, userName) => {
+    this.setState({
+      authenticated: true,
+      accessToken: accessToken,
+      idToken: idToken,
+      userEmail: userEmail,
+      userName: userName
+    });
   }
 
   render() {
     return (
       <div className="App">
         <BrowserRouter>
-          <Route path="/login">
-            <this.LoginPage></this.LoginPage>    
+          <Route path="/signin">
+            <SignIn handleAuthenticated={this.handleAuthenticated}></SignIn>  
+          </Route>
+          <Route path="/register" component={() => <Registration handleRegistered={this.handleAuthenticated}/>}>
           </Route>
         <this.PrivateRoute path="/app"> 
           <>
@@ -457,20 +479,9 @@ class App extends React.Component {
             <Navbar.Toggle aria-controls="basic-navbar-nav" />
             <Navbar.Collapse id="basic-navbar-nav">
               <Nav className="mr-auto">
-                <Nav.Link href="#home">Home</Nav.Link>
-                <Nav.Link href="#link">Link</Nav.Link>
-                <NavDropdown title="Dropdown" id="basic-nav-dropdown">
-                  <NavDropdown.Item href="#action/3.1">Action</NavDropdown.Item>
-                  <NavDropdown.Item href="#action/3.2">Another action</NavDropdown.Item>
-                  <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
-                  <NavDropdown.Divider />
-                  <NavDropdown.Item href="#action/3.4">Separated link</NavDropdown.Item>
-                </NavDropdown>
+                <Nav.Link href="/app">Home</Nav.Link>
+                <Nav.Link href="">Coming Soon</Nav.Link>
               </Nav>
-              <Form inline>
-                <FormControl type="text" placeholder="Search" className="mr-sm-2" />
-                <Button variant="outline-success">Search</Button>
-              </Form>
             </Navbar.Collapse>
           </Navbar>
           {/*Date Picker Row*/}

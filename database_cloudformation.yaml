@@ -1,0 +1,267 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create a dynamo table and an api gateway to access it.
+
+Resources:
+  TrackrDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: trackr-data-dev
+      AttributeDefinitions:
+        -
+          AttributeName: "email"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "email"
+          KeyType: "HASH"
+      BillingMode: "PAY_PER_REQUEST"
+
+  TrackrDataApiGateway:
+    Type: "AWS::ApiGateway::RestApi"
+    DependsOn:
+      - TrackrDataTable
+      - ApiGatewayAccessDynamoRole
+    Properties:
+      Name: trackr-data-api-dev
+      Description: api gw for trackr data
+
+  TrackrDataApiGatewayUserResource:
+    Type: "AWS::ApiGateway::Resource"
+    DependsOn:
+      - TrackrDataApiGateway
+    Properties:
+      RestApiId: !Ref TrackrDataApiGateway
+      ParentId: !GetAtt 
+       - TrackrDataApiGateway
+       - RootResourceId
+      PathPart: "user"
+
+  TrackrDataApiGatewayRootPostMethod:
+    Type: "AWS::ApiGateway::Method"
+    DependsOn:
+      - TrackrDataApiGateway
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "POST"
+      Integration:
+        Credentials: !GetAtt ApiGatewayAccessDynamoRole.Arn
+        IntegrationHttpMethod: "POST"
+        Type: "AWS"
+        Uri: "arn:aws:apigateway:us-east-1:dynamodb:action/PutItem"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          "application/json": !Sub >
+            {
+              "TableName": "trackr-data-dev",
+              "Item": {
+                "email": {"S":"$input.path('$.userEmail')"},
+                "data": {"S":"$util.escapeJavaScript("$input.path('$.data')")"},
+                "fieldDefinitions": {"S":"$util.escapeJavaScript("$input.path('$.fieldDefinitions')")"}
+              }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+      ResourceId: !GetAtt TrackrDataApiGateway.RootResourceId
+      RestApiId: !Ref TrackrDataApiGateway
+
+  TrackrDataApiGatewayUserOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn:
+      - TrackrDataApiGatewayUserResource
+    Properties:
+      ResourceId: !Ref TrackrDataApiGatewayUserResource
+      RestApiId: !Ref TrackrDataApiGateway
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: 'Empty'
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+
+  TrackrDataApiGatewayRootOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn:
+      - TrackrDataApiGateway
+    Properties:
+      ResourceId: !GetAtt TrackrDataApiGateway.RootResourceId
+      RestApiId: !Ref TrackrDataApiGateway
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: ''
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: 'Empty'
+        ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+
+  TrackrDataApiGatewayScanMethod:
+    Type: "AWS::ApiGateway::Method"
+    DependsOn:
+      - TrackrDataApiGateway
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "GET"
+      Integration:
+        Credentials: !GetAtt ApiGatewayAccessDynamoRole.Arn
+        IntegrationHttpMethod: "POST"
+        Type: "AWS"
+        Uri: "arn:aws:apigateway:us-east-1:dynamodb:action/Scan"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              "application/json": !Sub >
+                #set($inputRoot = $input.path('$'))
+                {
+                  #foreach($elem in $inputRoot.Items) 
+                    "$elem.email.S": { "data": "$elem.data.S", "fieldDefinitions": "$elem.fieldDefinitions.S"}#if($foreach.hasNext),#end
+                  #end
+                }
+        RequestTemplates:
+          "application/json": !Sub >
+            {
+              "TableName": "trackr-data-dev"
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+      ResourceId: !GetAtt TrackrDataApiGateway.RootResourceId
+      RestApiId: !Ref TrackrDataApiGateway
+
+  TrackrDataApiGatewayGetItemMethod:
+    Type: "AWS::ApiGateway::Method"
+    DependsOn:
+      - TrackrDataApiGatewayUserResource
+    Properties:
+      AuthorizationType: "NONE"
+      HttpMethod: "GET"
+      Integration:
+        Credentials: !GetAtt ApiGatewayAccessDynamoRole.Arn
+        IntegrationHttpMethod: "POST"
+        Type: "AWS"
+        Uri: "arn:aws:apigateway:us-east-1:dynamodb:action/Query"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'*'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              "application/json": !Sub >
+                #set($inputRoot = $input.path('$')) {
+                  "userData": {
+                      #foreach($elem in $inputRoot.Items)
+                          "$elem.email.S": {
+                          "data": "$elem.data.S",
+                          "fieldDefinitions": "$elem.fieldDefinitions.S"
+                      }#if($foreach.hasNext),#end
+                #end
+                  }
+                }
+            
+        RequestTemplates:
+          "application/json": !Sub >
+            {
+              "TableName": "trackr-data-dev",
+              "KeyConditionExpression": "email = :v1",
+              "ExpressionAttributeValues": {
+                  ":v1": {
+                      "S": "$input.params('email')"
+                  }
+              }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: false
+      ResourceId: !Ref TrackrDataApiGatewayUserResource
+      RestApiId: !Ref TrackrDataApiGateway
+
+
+  TrackrDataApiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:
+      - TrackrDataApiGatewayRootPostMethod
+      - TrackrDataApiGatewayScanMethod
+      - TrackrDataApiGatewayRootOptionsMethod
+      - TrackrDataApiGatewayUserResource
+      - TrackrDataApiGatewayUserOptionsMethod
+    Properties:
+      RestApiId: !Ref "TrackrDataApiGateway"
+      StageName: "prod"
+      
+  ApiGatewayAccessDynamoRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: dynamodbAccessRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - dynamodb:*
+              Resource: "*"
+            - Effect: Allow
+              Action:
+              - logs:*
+              Resource: "*"
