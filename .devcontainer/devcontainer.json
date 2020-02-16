@@ -3,15 +3,13 @@
     "dockerFile": "Dockerfile",
     "workspaceMount": "source=life-tracker-container,target=/workspace,type=volume",
     "workspaceFolder": "/workspace",
-    "appPort": 3000,
+    "appPort": "0.0.0.0:3000:3000",
     "extensions": [
 		"CoenraadS.bracket-pair-colorizer",
-		"hazer.ReactCodeSnippets",
 		"Tyriar.sort-lines"
 	],
     "settings": {
         "terminal.integrated.shell.linux": "/bin/zsh"
     },
-    "postCreateCommand": "yarn",
-    "runArgs": ["-p", "10.123.123.31:3000:3000"]
+    "postCreateCommand": "yarn"
 }

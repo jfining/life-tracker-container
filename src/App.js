@@ -17,6 +17,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 import { faChevronCircleRight } from '@fortawesome/free-solid-svg-icons';
 import Select from 'react-select';
+import {BrowserRouter, Route, Redirect, useHistory, useLocation} from 'react-router-dom';
+import fakeAuth from './routes/FakeAuth';
 
 class App extends React.Component {
   constructor(props) { 
@@ -349,6 +351,7 @@ class App extends React.Component {
           <option disabled value="">Select Type</option>
           <option value="number">Number</option>
           <option value="dropdown">Dropdown</option>
+          <option value="multiselect">Multiselect</option>
         </Form.Control>
         {additionalControls}
       </ListGroup.Item>
@@ -369,10 +372,22 @@ class App extends React.Component {
   saveTempFields = () => {
     let fieldDefCopy = Object.assign({}, this.state.fieldDefinitions);
     for (var key of Object.keys(this.state.tempFieldDefinitions)) {
-      fieldDefCopy[this.state.tempFieldDefinitions[key]["name"]] = {
-        type: this.state.tempFieldDefinitions[key].type,
-        options: this.state.tempFieldDefinitions[key].options
-      };
+      if (this.state.tempFieldDefinitions[key].type === "multiselect") {
+        let tempOptions = [];
+        for (var item of this.state.tempFieldDefinitions[key].options) {
+          tempOptions.push({label: item, value: item});
+        }
+        fieldDefCopy[this.state.tempFieldDefinitions[key]["name"]] = {
+          type: this.state.tempFieldDefinitions[key].type,
+          options: tempOptions
+        };
+      }
+      else {
+        fieldDefCopy[this.state.tempFieldDefinitions[key]["name"]] = {
+          type: this.state.tempFieldDefinitions[key].type,
+          options: this.state.tempFieldDefinitions[key].options
+        };
+      }
     }
     this.setState({fieldDefinitions: fieldDefCopy, tempFieldDefinitions: {}});
     this.toggleEditMode();
@@ -388,75 +403,124 @@ class App extends React.Component {
     }
   }
 
+  PrivateRoute({ children, ...rest }) {
+    console.log("fakeAuth:", fakeAuth.isAuthenticated);
+    return (
+      <Route
+        {...rest}
+        render={({ location }) =>
+          fakeAuth.isAuthenticated ? (
+            children
+          ) : (
+            <Redirect
+              to={{
+                pathname: "/login",
+                state: { from: location }
+              }}
+            />
+          )
+        }
+      />
+    );
+  }
+
+  LoginPage() {
+    let history = useHistory();
+    let location = useLocation();
+  
+    let { from } = location.state || { from: { pathname: "/" } };
+    let login = () => {
+      fakeAuth.authenticate(() => {
+        history.replace(from);
+      });
+    };
+  
+    return (
+      <div>
+        <p>You must log in to view the page at {from.pathname}</p>
+        <button onClick={login}>Log in</button>
+      </div>
+    );
+  }
+
   render() {
     return (
       <div className="App">
-        <Navbar bg="light" expand="lg">
-          <Navbar.Brand href="#home">Trackr</Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="mr-auto">
-              <Nav.Link href="#home">Home</Nav.Link>
-              <Nav.Link href="#link">Link</Nav.Link>
-              <NavDropdown title="Dropdown" id="basic-nav-dropdown">
-                <NavDropdown.Item href="#action/3.1">Action</NavDropdown.Item>
-                <NavDropdown.Item href="#action/3.2">Another action</NavDropdown.Item>
-                <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
-                <NavDropdown.Divider />
-                <NavDropdown.Item href="#action/3.4">Separated link</NavDropdown.Item>
-              </NavDropdown>
-            </Nav>
-            <Form inline>
-              <FormControl type="text" placeholder="Search" className="mr-sm-2" />
-              <Button variant="outline-success">Search</Button>
-            </Form>
-          </Navbar.Collapse>
-        </Navbar>
-        {/*Date Picker Row*/}
-        <Row>
-          <Col>
-            <FontAwesomeIcon className={"dateLeft"} icon={faChevronCircleLeft} onClick={this.dateStepDown}/>
-            <DatePicker selected={this.state.selectedDate} onChange={this.handleDateChange}></DatePicker>
-            <FontAwesomeIcon className={"dateRight"} icon={faChevronCircleRight} onClick={this.dateStepUp}/>
-          </Col>
-        </Row>
-        {/*Card row*/}
-        <Row>
-          <Col>
-            <Card>
-              <Card.Header>
-                <span className={"float-left"}>Your Life</span>
-                {this.state.editMode ? 
+        <BrowserRouter>
+          <Route path="/login">
+            <this.LoginPage></this.LoginPage>    
+          </Route>
+        <this.PrivateRoute path="/app"> 
+          <>
+          <Navbar bg="light" expand="lg">
+            <Navbar.Brand href="#home">Trackr</Navbar.Brand>
+            <Navbar.Toggle aria-controls="basic-navbar-nav" />
+            <Navbar.Collapse id="basic-navbar-nav">
+              <Nav className="mr-auto">
+                <Nav.Link href="#home">Home</Nav.Link>
+                <Nav.Link href="#link">Link</Nav.Link>
+                <NavDropdown title="Dropdown" id="basic-nav-dropdown">
+                  <NavDropdown.Item href="#action/3.1">Action</NavDropdown.Item>
+                  <NavDropdown.Item href="#action/3.2">Another action</NavDropdown.Item>
+                  <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item href="#action/3.4">Separated link</NavDropdown.Item>
+                </NavDropdown>
+              </Nav>
+              <Form inline>
+                <FormControl type="text" placeholder="Search" className="mr-sm-2" />
+                <Button variant="outline-success">Search</Button>
+              </Form>
+            </Navbar.Collapse>
+          </Navbar>
+          {/*Date Picker Row*/}
+          <Row>
+            <Col>
+              <FontAwesomeIcon className={"dateLeft"} icon={faChevronCircleLeft} onClick={this.dateStepDown}/>
+              <DatePicker selected={this.state.selectedDate} onChange={this.handleDateChange}></DatePicker>
+              <FontAwesomeIcon className={"dateRight"} icon={faChevronCircleRight} onClick={this.dateStepUp}/>
+            </Col>
+          </Row>
+          {/*Card row*/}
+          <Row>
+            <Col>
+              <Card>
+                <Card.Header>
+                  <span className={"float-left"}>Your Life</span>
+                  {this.state.editMode ? 
+                    <>
+                    <Button form="tempFieldsForm" type="submit" variant="primary" className={"float-right"}>
+                      <FontAwesomeIcon icon={faSave}></FontAwesomeIcon>
+                    </Button>
+                    <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
+                      Cancel
+                    </Button>
+                    </>
+                    : 
+                    <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
+                      <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
+                    </Button>
+                  }
+                </Card.Header>
+                <ListGroup variant="flush">
+                  {this.createListGroupArray(this.state.selectedDateString)}
+                  {this.state.editMode ?
                   <>
-                  <Button form="tempFieldsForm" type="submit" variant="primary" className={"float-right"}>
-                    <FontAwesomeIcon icon={faSave}></FontAwesomeIcon>
-                  </Button>
-                  <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
-                    Cancel
-                  </Button>
-                  </>
-                  : 
-                  <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
-                    <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
-                  </Button>
-                }
-              </Card.Header>
-              <ListGroup variant="flush">
-                {this.createListGroupArray(this.state.selectedDateString)}
-                {this.state.editMode ?
-                <>
-                <Form id="tempFieldsForm" onSubmit={this.saveTempFields}>
-                  {Object.keys(this.state.tempFieldDefinitions).map(this.renderTempListItem)}
-                </Form>
-                <ListGroup.Item>
-                  <Button variant="primary" onClick={this.createTempListItem}>
-                    <FontAwesomeIcon icon={faPlus}></FontAwesomeIcon>
-                  </Button>
-                </ListGroup.Item></> : ""}
-              </ListGroup>
-            </Card>
-          </Col>
-        </Row>
+                  <Form id="tempFieldsForm" onSubmit={this.saveTempFields}>
+                    {Object.keys(this.state.tempFieldDefinitions).map(this.renderTempListItem)}
+                  </Form>
+                  <ListGroup.Item>
+                    <Button variant="primary" onClick={this.createTempListItem}>
+                      <FontAwesomeIcon icon={faPlus}></FontAwesomeIcon>
+                    </Button>
+                  </ListGroup.Item></> : ""}
+                </ListGroup>
+              </Card>
+            </Col>
+          </Row>
+          </>
+        </this.PrivateRoute>
+        </BrowserRouter>
       </div>
     );
   }
