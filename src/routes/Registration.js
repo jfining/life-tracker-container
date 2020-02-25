@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import passwordValidator from 'password-validator';
 import { register, signin, verify } from '../helpers/Cognito.js';
-import ProfileCreation from './ProfileCreation';
 
 class Registration extends Component {
   
@@ -32,7 +31,8 @@ class Registration extends Component {
       password: null,
       confirmPassword: null,
       errMessage: null,
-      schema: schema
+      schema: schema,
+      verificationCode: ""
     }
 
     this.handleClick = this.handleClick.bind(this)
@@ -55,7 +55,7 @@ class Registration extends Component {
     var user = res.user
     console.log(user)
     this.setState({
-      registered: true,
+      registered: true
     })
   }
 
@@ -75,7 +75,7 @@ class Registration extends Component {
       verified: true,
       accessToken: accessToken,
       idToken: idToken
-    })
+    }, this.handleProfileCreated);
   }
 
   onSigninFailure(err) {
@@ -135,7 +135,7 @@ class Registration extends Component {
 
 
   render() {
-    if (this.state.registered && this.state.verified) return (<ProfileCreation email={this.state.email} username={this.state.username} accessToken={this.state.authToken} idToken={this.state.idToken} handleProfileCreated={this.handleProfileCreated} />)
+    //if (this.state.registered && this.state.verified) return (<ProfileCreation email={this.state.email} username={this.state.username} accessToken={this.state.authToken} idToken={this.state.idToken} handleProfileCreated={this.handleProfileCreated} />)
     if (this.state.registered) return (
       <div className="signinBody">
         <div className="login text-center">
@@ -143,7 +143,7 @@ class Registration extends Component {
               {this.state.errMessage}
             </div> : <div/>}
           <form>
-            <h1 className="h3 mb-3 font-weight-normal">Docket.io</h1>
+            <h1 className="h3 mb-3 font-weight-normal">Trackr</h1>
             <h4 className="h4 mb-3 font-weight-normal">Verify Email</h4>
 
             <label htmlFor="inputCode" className="sr-only">Verification Code</label>

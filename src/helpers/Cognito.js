@@ -67,11 +67,15 @@ export function getSessionUser(onSuccess, onFailure) {
                 onFailure(err)
                 return;
             }
+            console.log(session);
             var accessToken = session.getAccessToken().getJwtToken();        
             /* Use the idToken for Logins Map when Federating User Pools with identity pools or when passing through an Authorization Header to an API Gateway Authorizer*/
             var idToken = session.idToken.jwtToken;
-            onSuccess(accessToken, idToken)
+            onSuccess(accessToken, idToken, session)
         });
+    }
+    else {
+        onFailure("No user signed in");
     }
 }
 

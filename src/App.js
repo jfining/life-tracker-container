@@ -15,9 +15,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronCircleLeft, faMinusSquare, faPlusSquare, faEdit, faPlus, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
 import { faChevronCircleRight } from '@fortawesome/free-solid-svg-icons';
 import Select from 'react-select';
-import {BrowserRouter, Route, Redirect} from 'react-router-dom';
+import {BrowserRouter, Route, Redirect, Link} from 'react-router-dom';
 import Registration from './routes/Registration';
 import SignIn from './routes/SignIn';
+import UserProfile from './helpers/UserProfile';
+import {signout} from './helpers/Cognito';
+
 
 class App extends React.Component {
   constructor(props) { 
@@ -47,9 +50,9 @@ class App extends React.Component {
       },
       data: {},
       tempFieldDefinitions: {},
-      userEmail: "jfining@gmail.com",
+      userEmail: "",
       userName: "",
-      authenticated: true
+      authenticated: false
     };
   }
 
@@ -424,6 +427,12 @@ class App extends React.Component {
 
   componentDidMount() {
     console.log("component did mount");
+    if (UserProfile.getUserInfo().validSession) {
+      console.log("Valid session, setting authenticated")
+      this.setState(
+        {authenticated: true}
+      );
+    }
     if (!this.state.isLoaded && this.state.authenticated) {
       this.getData();
     }
@@ -438,7 +447,7 @@ class App extends React.Component {
       <Route
         {...rest}
         render={({ location }) =>
-          this.state.authenticated ? (
+        UserProfile.getUserInfo().validSession ? (
             children
           ) : (
             <Redirect
@@ -454,23 +463,47 @@ class App extends React.Component {
   }
   //Change this to just use a cognito user object of some sort
   handleAuthenticated = (accessToken, idToken, userEmail, userName) => {
-    this.setState({
+    let userInfo = {
       authenticated: true,
       accessToken: accessToken,
       idToken: idToken,
       userEmail: userEmail,
       userName: userName
-    });
+    }
+    this.setState(userInfo);
+    UserProfile.setUserInfo(userInfo);
+  }
+
+  Logout = () => {
+    signout(UserProfile.getUserInfo().email);
+    return (
+      <Redirect to={{pathname: "/"}}/>
+    )
   }
 
   render() {
     return (
       <div className="App">
         <BrowserRouter>
+          <Route exact path="/">
+            <Row>
+              <Col>
+                <Link to="/register"><Button>New? Click here to Register</Button></Link>
+              </Col>
+            </Row>
+            <br/><br/><br/>
+            <Row>
+              <Col>
+                <Link to="/app"><Button>Go to Trackr App</Button></Link>
+              </Col>
+            </Row>
+          </Route>
           <Route path="/signin">
-            <SignIn handleAuthenticated={this.handleAuthenticated}></SignIn>  
+            <SignIn autheticated={UserProfile.getUserInfo().validSession} handleAuthenticated={this.handleAuthenticated}></SignIn>  
           </Route>
           <Route path="/register" component={() => <Registration handleRegistered={this.handleAuthenticated}/>}>
+          </Route>
+          <Route path="/logout" component={this.Logout}>
           </Route>
         <this.PrivateRoute path="/app"> 
           <>
@@ -481,6 +514,7 @@ class App extends React.Component {
               <Nav className="mr-auto">
                 <Nav.Link href="/app">Home</Nav.Link>
                 <Nav.Link href="">Coming Soon</Nav.Link>
+                <Link to="/logout"><Button>Logout</Button></Link>
               </Nav>
             </Navbar.Collapse>
           </Navbar>

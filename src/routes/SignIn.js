@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Link  } from 'react-router-dom';
+import { Link, Redirect  } from 'react-router-dom';
 import { signin, toUsername } from '../helpers/Cognito';
 import {useHistory, useLocation} from 'react-router-dom';
+import UserProfile from '../helpers/UserProfile';
 
 function SignIn(props) {
   let history = useHistory();
@@ -40,7 +41,16 @@ function SignIn(props) {
     signin(inputEmail, inputPass, onSuccess, onFailure)
   }
 
+  if(props.authenticated) {
+    console.log("Signin already authenticated, re-routing");
+    this.reRoute();
+  }
+
   return (
+    UserProfile.getUserInfo().validSession ? <Redirect
+    to={{
+      pathname: "/app"
+    }}/> : (
     <div className="signinBody">      
     <div class="login">
       <div>
@@ -55,7 +65,7 @@ function SignIn(props) {
           </Link>
       </div>
     </div>
-    </div>
+    </div>)
     )
 }
 
