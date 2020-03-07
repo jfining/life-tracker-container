@@ -57,7 +57,7 @@ class App extends React.Component {
   }
 
   getData = () => {
-    var url = process.env.REACT_APP_HOST + "/user?email=" + this.state.userEmail;
+    var url = process.env.REACT_APP_HOST + "/user?email=" + UserProfile.getEmail();
     console.log(url);
     fetch(url, {
       method: "GET",
@@ -79,7 +79,7 @@ class App extends React.Component {
   sendDataUpdate = () => {
     var url = process.env.REACT_APP_HOST + "/";
     let payload = {
-      userEmail: this.state.userEmail,
+      userEmail: UserProfile.getEmail(),
       data: JSON.stringify(this.state.data),
       fieldDefinitions: JSON.stringify(this.state.fieldDefinitions)
     }
