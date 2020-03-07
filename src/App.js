@@ -486,17 +486,7 @@ class App extends React.Component {
       <div className="App">
         <BrowserRouter>
           <Route exact path="/">
-            <Row>
-              <Col>
-                <Link to="/register"><Button>New? Click here to Register</Button></Link>
-              </Col>
-            </Row>
-            <br/><br/><br/>
-            <Row>
-              <Col>
-                <Link to="/app"><Button>Go to Trackr App</Button></Link>
-              </Col>
-            </Row>
+            <Redirect to={{pathname: "/home.html"}}></Redirect>
           </Route>
           <Route path="/signin">
             <SignIn autheticated={UserProfile.getUserInfo().validSession} handleAuthenticated={this.handleAuthenticated}></SignIn>  
