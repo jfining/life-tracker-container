@@ -38,3 +38,25 @@
 .dateRight { 
   margin-left: 10px;
 }
+
+.button-purple {
+  background-color: #80F;
+  border-color: white;
+}
+
+.button-purple:hover, .button-purple:active, .button-purple.active, 
+.open>.dropdown-toggle.button-purple, .button-purple:active:focus {
+  color: #fff;
+  background-color: rgb(157, 59, 255) !important;
+  border-color: #fff !important;
+  background-image: none;
+
+}
+
+.button-purple:focus, .button-purple:active:focus {
+  box-shadow: 0 0 0 0.2rem rgba(159, 63, 255, 0.479) !important;
+}
+
+.react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range, .react-datepicker__month-text--selected, .react-datepicker__month-text--in-selecting-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--selected, .react-datepicker__quarter-text--in-selecting-range, .react-datepicker__quarter-text--in-range {
+  background-color: #A5F !important;
+}

@@ -58,7 +58,7 @@ class App extends React.Component {
 
   getData = () => {
     var url = process.env.REACT_APP_HOST + "/user?email=" + UserProfile.getEmail();
-    console.log(url);
+    console.log("getting user data");
     fetch(url, {
       method: "GET",
       headers: {
@@ -66,7 +66,7 @@ class App extends React.Component {
     })
     .then(res => res.json())
     .then(results => {
-      var userInfo = results.userData[this.state.userEmail];
+      var userInfo = results.userData[UserProfile.getEmail()];
       this.setState({
         isLoaded: true,
         data: userInfo.data,
@@ -280,7 +280,7 @@ class App extends React.Component {
 
     else if(fieldType === "multiselect") {
       inputGroup =
-      <Select isMulti={true} options={this.state.fieldDefinitions[field].options} placeholder="Start typing or select some values"
+      <Select isMulti={true} isSearchable={false} options={this.state.fieldDefinitions[field].options} placeholder="Multiselect"
         value = {this.state.data[this.state.selectedDateString][field]}
         onChange={(selectedValue) => {
           let tempObject = this.state.data;
@@ -432,9 +432,10 @@ class App extends React.Component {
       this.setState(
         {authenticated: true}
       );
+      this.getData();
     }
     if (!this.state.isLoaded && this.state.authenticated) {
-      this.getData();
+      
     }
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
       this.initializeDate(this.state.selectedDateString);
@@ -481,6 +482,12 @@ class App extends React.Component {
     )
   }
 
+  DatePickerButton = ({ value, onClick }) => (
+    <Button className="button-purple" onClick={onClick}>
+      {value}
+    </Button>
+  );
+
   render() {
     return (
       <div className="App">
@@ -497,31 +504,36 @@ class App extends React.Component {
           </Route>
         <this.PrivateRoute path="/app"> 
           <>
-          <Navbar bg="light" expand="lg">
-            <Navbar.Brand href="#home">Trackr</Navbar.Brand>
-            <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar bg="light" expand="md">
+            <Navbar.Brand href="#home" style={{maxWidth: "35%"}}><img alt="logo" src="/trackr_logo.png" className={"float-left"} style={{width: "100%"}}></img></Navbar.Brand>
+            <Navbar.Toggle aria-controls="basic-navbar-nav"/>
             <Navbar.Collapse id="basic-navbar-nav">
-              <Nav className="mr-auto">
+              <Nav className={"ml-auto"}>
                 <Nav.Link href="/app">Home</Nav.Link>
                 <Nav.Link href="">Coming Soon</Nav.Link>
                 <Link to="/logout"><Button>Logout</Button></Link>
               </Nav>
             </Navbar.Collapse>
           </Navbar>
-          {/*Date Picker Row*/}
-          <Row>
-            <Col>
-              <FontAwesomeIcon className={"dateLeft"} icon={faChevronCircleLeft} onClick={this.dateStepDown}/>
-              <DatePicker selected={this.state.selectedDate} onChange={this.handleDateChange}></DatePicker>
-              <FontAwesomeIcon className={"dateRight"} icon={faChevronCircleRight} onClick={this.dateStepUp}/>
-            </Col>
-          </Row>
           {/*Card row*/}
           <Row>
             <Col>
               <Card>
                 <Card.Header>
-                  <span className={"float-left"}>Your Life</span>
+                  <Row>
+                  <Col xs={3}>
+                    <span className={"float-left"}>Your Life</span>
+                  </Col>
+                  <Col xs={6}>
+                    <FontAwesomeIcon className={"dateLeft"} icon={faChevronCircleLeft} onClick={this.dateStepDown}/>
+                    <DatePicker selected={this.state.selectedDate}
+                      onChange={this.handleDateChange}
+                      customInput={<this.DatePickerButton></this.DatePickerButton>}
+                      todayButton="Jump To Today">
+                    </DatePicker>
+                    <FontAwesomeIcon className={"dateRight"} icon={faChevronCircleRight} onClick={this.dateStepUp}/>
+                  </Col>
+                  <Col xs={3}>
                   {this.state.editMode ? 
                     <>
                     <Button form="tempFieldsForm" type="submit" variant="primary" className={"float-right"}>
@@ -536,6 +548,8 @@ class App extends React.Component {
                       <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
                     </Button>
                   }
+                  </Col>
+                  </Row>
                 </Card.Header>
                 <ListGroup variant="flush">
                   {this.createListGroupArray(this.state.selectedDateString)}
