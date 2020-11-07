@@ -32,28 +32,14 @@ class App extends React.Component {
       selectedDate: now,
       editMode: false,
       selectedDateString: selectedDateString,
-      fieldDefinitions: {
-        "Glasses of Water": {
-          type: "number"
-        },
-        "Cups of Coffee": {
-          type: "number"
-        },
-        "Single Select Dropdown": {
-          type: "dropdown",
-          options: ["option1", "option2", "option3"]
-        },
-        "Multiselect Dropdown": {
-          type: "multiselect",
-          options: [{value:"one", label:"one"}, {value:"two", label:"two"}, {value:"three", label:"three"}]
-        }
-      },
+      fieldDefinitions: {},
       data: {},
       tempFieldDefinitions: {},
       userEmail: "",
       userName: "",
       authenticated: false
     };
+    this.updateTimer = null;
   }
 
   getData = () => {
@@ -224,6 +210,9 @@ class App extends React.Component {
     else if (this.state.fieldDefinitions[field].type === "multiselect") {
       return [];
     }
+    else if (this.state.fieldDefinitions[field].type === "text") {
+      return "";
+    }
   }
 
   createListGroupItem = field => {
@@ -290,6 +279,24 @@ class App extends React.Component {
       >
       </Select>;
     }
+
+    else if(fieldType === "text") {
+      inputGroup = 
+      <InputGroup>
+        <Form.Control type="text" placeholder="Enter text" value={
+          this.state.data[this.state.selectedDateString].hasOwnProperty(field) ? 
+          this.state.data[this.state.selectedDateString][field] :
+          this.getDefaultForField(field)}
+          onChange={(newTextEvent) => {
+            console.log("text change:"+newTextEvent.target.value)
+            let tempObject = this.state.data;
+            tempObject[this.state.selectedDateString][field] = newTextEvent.target.value;
+            this.setState({data: tempObject});
+            this.resetUpdateTimer();
+          }}
+        />
+      </InputGroup>;
+    }
     
     return(
       <ListGroup.Item key={field}>
@@ -311,11 +318,19 @@ class App extends React.Component {
     )
   }
 
+  resetUpdateTimer = () => {
+    clearTimeout(this.updateTimer)
+    this.updateTimer = setTimeout(this.sendDataUpdate, 2000);
+  }
+
   toggleEditMode = event => {
+    if (event != null) {
+      event.preventDefault();
+    }
     this.setState({
       editMode: !this.state.editMode
     });
-    console.log(JSON.stringify(this.state));
+    console.log("Toggled edit mode:"+JSON.stringify(this.state.editMode));
   }
 
   handleItemRemove = event => {
@@ -383,6 +398,7 @@ class App extends React.Component {
           <option value="number">Number</option>
           <option value="dropdown">Dropdown</option>
           <option value="multiselect">Multiselect</option>
+          <option value="text">Text</option>
         </Form.Control>
         {additionalControls}
       </ListGroup.Item>
@@ -421,8 +437,8 @@ class App extends React.Component {
       }
     }
     this.setState({fieldDefinitions: fieldDefCopy, tempFieldDefinitions: {}});
-    this.toggleEditMode();
     this.sendDataUpdate();
+    this.toggleEditMode(null);
   }
 
   componentDidMount() {
@@ -544,7 +560,7 @@ class App extends React.Component {
                     </Button>
                     </>
                     : 
-                    <Button variant="dark" className={"float-right"} onClick={this.toggleEditMode}>
+                    <Button variant="dark" type="button" className={"float-right"} onClick={this.toggleEditMode}>
                       <FontAwesomeIcon icon={faEdit}></FontAwesomeIcon>
                     </Button>
                   }

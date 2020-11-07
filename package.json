@@ -20,7 +20,8 @@
     "start": "HOST=0.0.0.0 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "react-scripts build && aws s3 sync --profile jfining build/ s3://trackr.goodvibes.beer"
   },
   "eslintConfig": {
     "extends": "react-app"
