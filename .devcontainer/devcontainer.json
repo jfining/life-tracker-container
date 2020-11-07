@@ -11,5 +11,5 @@
     "settings": {
         "terminal.integrated.shell.linux": "/bin/zsh"
     },
-    "postCreateCommand": "yarn"
+    "postCreateCommand": "git clone git@github.com:jfining/life-tracker-container.git && cd /workspace/life-tracker-container/ && yarn"
 }
