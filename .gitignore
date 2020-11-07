@@ -106,3 +106,10 @@ dist
 # .vscode settings that contains IP addresses
 .vscode/settings.json
 
+# custom deploy secrets
+dev_deploy.sh
+dev_run.sh
+.devcontainer/gitkey
+
+# Build output
+build/*
