@@ -2,6 +2,10 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import passwordValidator from 'password-validator';
 import { register, signin, verify } from '../helpers/Cognito.js';
+import Card from 'react-bootstrap/esm/Card';
+import Button from 'react-bootstrap/Button';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
 
 class Registration extends Component {
   
@@ -138,43 +142,63 @@ class Registration extends Component {
     //if (this.state.registered && this.state.verified) return (<ProfileCreation email={this.state.email} username={this.state.username} accessToken={this.state.authToken} idToken={this.state.idToken} handleProfileCreated={this.handleProfileCreated} />)
     if (this.state.registered) return (
       <div className="signinBody">
+        <Navbar bg="light" expand="md">
+          <Navbar.Brand href="#home" style={{maxWidth: "35%"}}><img alt="logo" src="/trackr_logo.png" className={"float-left"} style={{width: "100%"}}></img></Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav className={"ml-auto"}>
+              <Nav.Link href="/app">Home</Nav.Link>
+            </Nav>
+          </Navbar.Collapse>
+        </Navbar>
         <div className="login text-center">
          {this.state.errMessage ? <div className="alert alert-danger" role="alert">
               {this.state.errMessage}
             </div> : <div/>}
-          <form>
-            <h1 className="h3 mb-3 font-weight-normal">Trackr</h1>
-            <h4 className="h4 mb-3 font-weight-normal">Verify Email</h4>
-
-            <label htmlFor="inputCode" className="sr-only">Verification Code</label>
-            <input type="text" id="inputCode" className="" placeholder="Code" onChange={this.onCodeChange}/>
-
-            <button className="btn btn-lg btn-primary btn-block" type="button" onClick={this.handleVerify}>Verify</button>
-          </form>
+          <Card className="text-center mx-auto my-auto" style={{ width: '18rem' }}>
+            <Card.Header>Verify Email</Card.Header>
+            <Card.Body>
+              <form>
+                <input type="text" id="inputCode" className="loginInput" placeholder="Verification Code" onChange={this.onCodeChange}/>
+                <Button className="btn btn-lg btn-primary btn-block" type="button" onClick={this.handleVerify}>Verify</Button>
+              </form>
+            </Card.Body>
+          </Card>
          </div>
       </div>
     )
 
   	return (
       <div className="signinBody">
-         <div className="login">
-         {this.state.errMessage ? <div className="alert alert-danger" role="alert">
-              {this.state.errMessage}
-            </div> : <div/>}
-          <form>
-            <label htmlFor="inputEmail" className="sr-only">Email</label>
-            <input type="email" id="inputEmail" className="" placeholder="Email" onChange={this.onEmailChange}/>
-            <label htmlFor="inputPassword" className="sr-only">Password</label>
-            <input type="password" id="inputPassword" className="" placeholder="Password" onChange={this.onPassChange}/>
-
-            <label htmlFor="inputPassword" className="sr-only">Confirm Password</label>
-            <input type="password" id="confirmPassword" className="" placeholder="Confirm Password" onChange={this.onConfirmChange}/>
-            
-            <button className="btn btn-lg btn-primary btn-block" type="button" onClick={this.handleClick}>Register</button>
-            <p>Already registered? <Link to="/signin">Sign in</Link></p>
-            <p>Passwords must be at least 8 characters long and include lowercase, uppercase, numbers, and a special character</p>
-          </form>
-         </div>
+        <Navbar bg="light" expand="md">
+          <Navbar.Brand href="#home" style={{maxWidth: "35%"}}><img alt="logo" src="/trackr_logo.png" className={"float-left"} style={{width: "100%"}}></img></Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+          <Navbar.Collapse id="basic-navbar-nav">
+            <Nav className={"ml-auto"}>
+              <Nav.Link href="/app">Home</Nav.Link>
+            </Nav>
+          </Navbar.Collapse>
+        </Navbar>
+          <div className="login">
+          {this.state.errMessage ? <div className="alert alert-danger" role="alert">
+                {this.state.errMessage}
+              </div> : <div/>}
+            <Card className="text-center mx-auto my-auto" style={{ width: '18rem' }}>
+              <Card.Header>Create New Account</Card.Header>
+              <Card.Body>
+                <form>
+                  <input type="email" id="inputEmail" className="loginInput" placeholder="Email" onChange={this.onEmailChange}/>
+                  <input type="password" id="inputPassword" className="loginInput" placeholder="Password" onChange={this.onPassChange}/>
+                  <input type="password" id="confirmPassword" className="loginInput" placeholder="Confirm Password" onChange={this.onConfirmChange}/>                  
+                  <Button className="btn btn-lg btn-primary btn-block" type="button" onClick={this.handleClick}>Register</Button>
+                  <p style={{marginTop: "2vh"}}>Passwords must be at least 8 characters long and include lowercase, uppercase, numbers, and a special character</p>
+                </form>
+              </Card.Body>
+              <Card.Footer>
+                <p>Already registered? <Link to="/signin">Sign in</Link></p>
+              </Card.Footer>
+            </Card>
+          </div>
       </div>
       )   
     }

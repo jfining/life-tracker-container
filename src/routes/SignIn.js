@@ -3,6 +3,10 @@ import { Link, Redirect  } from 'react-router-dom';
 import { signin, toUsername } from '../helpers/Cognito';
 import {useHistory, useLocation} from 'react-router-dom';
 import UserProfile from '../helpers/UserProfile';
+import Card from 'react-bootstrap/esm/Card';
+import Button from 'react-bootstrap/Button';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
 
 function SignIn(props) {
   let history = useHistory();
@@ -51,20 +55,39 @@ function SignIn(props) {
     to={{
       pathname: "/app"
     }}/> : (
-    <div className="signinBody">      
-    <div class="login">
-      <div>
-          {errMessage ? <div className="alert alert-danger" role="alert">
-            {errMessage}
-          </div> : <div/>}
-        <input type="text" name="u" placeholder="Email" required="required" onChange={onUserChange} />
-          <input type="password" name="p" placeholder="Password" required="required" onChange={onPassChange}/>
-          <button className="btn btn-primary btn-block btn-large" onClick={handleClick}>Log In</button>
-          <Link to="/register">
-            <button className="btn btn-secondar btn-block btn-md">New? Click Here to Register</button>
-          </Link>
+    <div className="signInBody">
+      <Navbar bg="light" expand="md">
+        <Navbar.Brand href="#home" style={{maxWidth: "35%"}}><img alt="logo" src="/trackr_logo.png" className={"float-left"} style={{width: "100%"}}></img></Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className={"ml-auto"}>
+            <Nav.Link href="/app">Home</Nav.Link>
+            <Nav.Link href="">Coming Soon</Nav.Link>
+          </Nav>
+        </Navbar.Collapse>
+      </Navbar>
+      <div class="login">
+        <div class="conainer d-flex">
+            {errMessage ? <div className="alert alert-danger" role="alert">
+              {errMessage}
+            </div> : <div/>}
+          <Card className="text-center mx-auto my-auto" style={{ width: '18rem' }}>
+            <Card.Header>
+              <span>Login</span>
+            </Card.Header>
+            <Card.Body>
+              <input className="loginInput" type="text" name="u" placeholder="Email" required="required" onChange={onUserChange} />
+              <input className="loginInput" type="password" name="p" placeholder="Password" required="required" onChange={onPassChange}/>
+              <Button className="btn btn-primary btn-block btn-large" onClick={handleClick}>Log In</Button>
+            </Card.Body>
+            <Card.Footer className="text-muted">
+              <Link to="/register">
+                <button className="btn btn-secondar btn-block btn-md">New? Click Here to Register</button>
+              </Link>
+            </Card.Footer>
+          </Card>
+        </div>
       </div>
-    </div>
     </div>)
     )
 }

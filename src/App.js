@@ -451,7 +451,7 @@ class App extends React.Component {
       this.getData();
     }
     if (!this.state.isLoaded && this.state.authenticated) {
-      
+      this.getData();
     }
     if (!this.state.data.hasOwnProperty(this.state.selectedDateString)) {
       this.initializeDate(this.state.selectedDateString);
@@ -487,14 +487,14 @@ class App extends React.Component {
       userEmail: userEmail,
       userName: userName
     }
-    this.setState(userInfo);
+    this.setState(userInfo, this.getData);
     UserProfile.setUserInfo(userInfo);
   }
 
   Logout = () => {
     signout(UserProfile.getUserInfo().email);
     return (
-      <Redirect to={{pathname: "/"}}/>
+      <Redirect to={{pathname: "/signin"}}/>
     )
   }
 
@@ -508,8 +508,7 @@ class App extends React.Component {
     return (
       <div className="App">
         <BrowserRouter>
-          <Route exact path="/">
-            <Redirect to={{pathname: "/home.html"}}></Redirect>
+          <Route exact path="/" component={() => {window.location.href = window.location.href+'home.html'; return null;}}>
           </Route>
           <Route path="/signin">
             <SignIn autheticated={UserProfile.getUserInfo().validSession} handleAuthenticated={this.handleAuthenticated}></SignIn>  
